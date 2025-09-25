@@ -1,3 +1,6 @@
+/**
+ * Message shape for the streaming weather agent API.
+ */
 export interface ApiMessage { role: 'system' | 'user' | 'assistant'; content: string }
 export interface ApiRequest {
   messages: ApiMessage[];
@@ -14,6 +17,10 @@ export interface ApiRequest {
 const API_ENDPOINT = 'https://millions-screeching-vultur.mastra.cloud/api/agents/weatherAgent/stream';
 const THREAD_ID = '22-COMPC18-26';
 
+/**
+ * Build the request payload sent to the weather agent.
+ * Includes a system instruction to enforce weather-only answers.
+ */
 export const createApiRequest = (message: string): ApiRequest => ({
   messages: [
     {
@@ -33,6 +40,10 @@ export const createApiRequest = (message: string): ApiRequest => ({
   resourceId: 'weatherAgent'
 });
 
+/**
+ * Attempt to extract human-readable text from a mixed token stream.
+ * The server may emit indices, JSON tool calls, and text; we filter to text.
+ */
 export const extractTextFromTokenStream = (raw: string): string => {
   try {
     if (/^[faed]:/i.test(raw.trim())) return '';
@@ -63,6 +74,10 @@ export const extractTextFromTokenStream = (raw: string): string => {
   }
 };
 
+/**
+ * Post a prompt to the weather agent and stream text chunks via SSE.
+ * onChunk is called with incremental text; onComplete when stream ends.
+ */
 export const sendMessageToWeatherAgent = async (
   message: string,
   onChunk: (chunk: string) => void,

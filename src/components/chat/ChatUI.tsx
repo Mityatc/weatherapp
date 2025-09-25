@@ -2,6 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useWeatherStream } from '../../hooks/useWeatherStream';
 import type { Message } from '../../types/chat';
 
+/**
+ * ChatUI
+ * Stateless chat surface binding input, message list, and stream formatting.
+ * Includes minimal validation to ensure a location is present in queries.
+ */
 const ChatUI: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -22,11 +27,11 @@ const ChatUI: React.FC = () => {
   const handleSendMessage = async () => {
     const text = inputValue.trim();
     if (!text || isLoading) return;
-    const hasLocationHint = /(\b(in|at|for)\s+[A-Za-zÀ-ÿ'().-]{2,})/i.test(text);
+    const hasLocationHint = /(\b(in|at|for|city)\s+[A-Za-zÀ-ÿ'().-]{2,})/i.test(text);
     const looksLikeSingleLocation = /^[A-Za-zÀ-ÿ'().-]{2,}(?:\s+[A-Za-zÀ-ÿ'().-]{2,}){0,2}$/i.test(text);
     // Allow multiple comma-separated locations like "Mumbai now, Delhi tomorrow"
     const segments = text.split(',').map(s => s.trim());
-    const segmentHasLocation = segments.some(seg => /(\b(in|at|for)\s+[A-Za-zÀ-ÿ'().-]{2,})/i.test(seg) || /^[A-Za-zÀ-ÿ'().-]{2,}(?:\s+[A-Za-zÀ-ÿ'().-]{2,}){0,2}$/i.test(seg));
+    const segmentHasLocation = segments.some(seg => /(\b(in|at|for|city)\s+[A-Za-zÀ-ÿ'().-]{2,})/i.test(seg) || /^[A-Za-zÀ-ÿ'().-]{2,}(?:\s+[A-Za-zÀ-ÿ'().-]{2,}){0,2}$/i.test(seg));
     if (!(hasLocationHint || looksLikeSingleLocation || segmentHasLocation)) {
       setError('Please ask a weather question with a location (e.g., “Weather in London?” or just “Mumbai”).');
       return;
@@ -50,6 +55,7 @@ const ChatUI: React.FC = () => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
   };
 
+  /** Render agent text with light structure parsing for readability. */
   const formatAgentMessage = (content: string) => {
     // Normalize spacing and newlines
     const normalized = content.replace(/\r/g, '').replace(/\n{3,}/g, '\n\n');
@@ -138,9 +144,15 @@ const ChatUI: React.FC = () => {
         <div className="max-w-3xl mx-auto space-y-6">
           {messages.map((message) => (
             <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`${message.type === 'user' ? 'bg-gray-200 text-gray-900' : 'bg-white border border-gray-200 text-gray-900'} rounded-2xl px-5 py-3 max-w-[680px] shadow-sm`}>
-                {message.type === 'agent' ? (<div className="space-y-3">{formatAgentMessage(message.content)}</div>) : (<p className="text-base leading-relaxed">{message.content}</p>)}
-              </div>
+              {message.type === 'user' ? (
+                <div className="bg-gray-200 text-gray-900 rounded-2xl px-5 py-3 max-w-[680px] shadow-sm">
+                  <p className="text-base leading-relaxed">{message.content}</p>
+                </div>
+              ) : (
+                <div className="text-gray-900 max-w-[680px]">
+                  <div className="space-y-3">{formatAgentMessage(message.content)}</div>
+                </div>
+              )}
             </div>
           ))}
           <div ref={messagesEndRef} />
@@ -185,9 +197,6 @@ const ChatUI: React.FC = () => {
                 <path d="M12 19v-8" />
               </svg>
             </button>
-            {isLoading && (
-              <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 border-2 border-gray-300 border-t-gray-700 rounded-full animate-spin" aria-hidden="true" />
-            )}
             <div className="pointer-events-none absolute right-28 top-1/2 -translate-y-1/2 text-xs text-gray-400 select-none">
               {inputValue.length}/1000
             </div>

@@ -1,11 +1,20 @@
 import { useRef, useState, useCallback } from 'react';
 import { sendMessageToWeatherAgent } from '../lib/api';
 
+/**
+ * useWeatherStream
+ * Manages a single streaming request lifecycle to the weather agent.
+ * Exposes loading state, last error, a send() to start streaming, and cancel().
+ */
 export function useWeatherStream() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
+  /**
+   * Start a streaming request. onChunk will receive incremental text.
+   * onComplete fires after the stream ends normally.
+   */
   const send = useCallback(async (
     text: string,
     onChunk: (chunk: string) => void,
@@ -37,6 +46,7 @@ export function useWeatherStream() {
     );
   }, []);
 
+  /** Cancel any in-flight request. */
   const cancel = useCallback(() => {
     if (abortRef.current) abortRef.current.abort();
   }, []);
