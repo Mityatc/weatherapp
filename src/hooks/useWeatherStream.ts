@@ -1,0 +1,47 @@
+import { useRef, useState, useCallback } from 'react';
+import { sendMessageToWeatherAgent } from '../lib/api';
+
+export function useWeatherStream() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  const send = useCallback(async (
+    text: string,
+    onChunk: (chunk: string) => void,
+    onComplete?: () => void
+  ) => {
+    if (abortRef.current) abortRef.current.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setIsLoading(true);
+    setError(null);
+
+    await sendMessageToWeatherAgent(
+      text,
+      onChunk,
+      (err) => {
+        const friendly = typeof window !== 'undefined' && !navigator.onLine
+          ? 'You are offline. Check your connection and try again.'
+          : err === 'Failed to fetch'
+            ? 'Network error. Please try again.'
+            : err;
+        setError(friendly);
+        setIsLoading(false);
+      },
+      () => {
+        setIsLoading(false);
+        onComplete?.();
+      },
+      controller
+    );
+  }, []);
+
+  const cancel = useCallback(() => {
+    if (abortRef.current) abortRef.current.abort();
+  }, []);
+
+  return { isLoading, error, send, cancel, setError } as const;
+}
+
+
